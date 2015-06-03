@@ -66,12 +66,12 @@ let request_to_stage (req : Request.t) : stage =
   | [ "virtual-policy"; vno ]             -> VPolicy (int_of_string vno)
   | [ "virtual-relation"; vno ]           -> VRelation (int_of_string vno)
   | [ "virtual-topology" ; vno ]          -> VTopology (int_of_string vno)
-  | [ "virtual-ingress-predicate" ; vno ] -> VIngressPolicy (int_of_string vno)
-  | [ "virtual-ingress-policy" ; vno ]    -> VIngressPredicate (int_of_string vno)
-  | [ "virtual-egress-policy" ; vno ]     -> VEgressPredicate (int_of_string vno)
+  | [ "virtual-ingress-policy" ; vno ]    -> VIngressPolicy (int_of_string vno)
+  | [ "virtual-ingress-predicate" ; vno ] -> VIngressPredicate (int_of_string vno)
+  | [ "virtual-egress-predicate" ; vno ]  -> VEgressPredicate (int_of_string vno)
   | [ "physical-topology" ]               -> PTopology
-  | [ "physical-ingress-policy" ]         -> PIngressPredicate
-  | [ "physical-egress-policy" ]          -> PEgressPredicate
+  | [ "physical-ingress-predicate" ]      -> PIngressPredicate
+  | [ "physical-egress-predicate" ]       -> PEgressPredicate
   | [ "compile" ]                         -> Compile
   | [ "get-flowtable" ; sw]               -> FlowTable (Int64.of_string sw)
   | _                                     -> Unknown
@@ -99,7 +99,7 @@ let attempt_phys_update body parse loc =
 
 let handle_request
     ~(body : Cohttp_async.Body.t)
-   (client_addr : Socket.Address.Inet.t)
+    (client_addr : Socket.Address.Inet.t)
     (request : Request.t) : Server.response Deferred.t =
   match request.meth, request_to_stage request with
   | `GET, VAdd i -> begin

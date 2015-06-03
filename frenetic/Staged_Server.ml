@@ -37,6 +37,7 @@ let compiled          = ref None
 let vnos = Hashtbl.create ~hashable:Int.hashable ()
 
 let parse_pol s = NetKAT_Parser.program NetKAT_Lexer.token (Lexing.from_string s)
+let parse_pol_json s = NetKAT_Json.policy_from_json_string s
 let parse_pred s = NetKAT_Parser.pred_program NetKAT_Lexer.token (Lexing.from_string s)
 let respond = Cohttp_async.Server.respond_with_string
 
@@ -110,7 +111,7 @@ let handle_request
     Hashtbl.remove vnos i ;
     respond "OK"
   | `POST, VPolicy i ->
-    attempt_vno_update i body parse_pol (fun v p -> {v with policy = p})
+    attempt_vno_update i body parse_pol_json (fun v p -> {v with policy = p})
       (fun p -> {default_vno with policy = p})
   | `POST, VRelation i ->
     attempt_vno_update i body parse_pred (fun v r -> {v with relation = r})
@@ -119,7 +120,7 @@ let handle_request
     attempt_vno_update i body parse_pol (fun v t -> {v with topology = t})
       (fun t -> {default_vno with topology = t})
   | `POST, VIngressPolicy i ->
-    attempt_vno_update i body parse_pol (fun v p -> {v with ingress_policy = p})
+    attempt_vno_update i body parse_pol_json (fun v p -> {v with ingress_policy = p})
       (fun p -> {default_vno with ingress_policy = p})
   | `POST, VIngressPredicate i ->
     attempt_vno_update i body parse_pred (fun v p -> {v with ingress_predicate = p})

@@ -9,26 +9,6 @@ open Baked_VNOS
 let policy = ref NetKAT_Types.drop
 let vno_pols = Array.of_list [NetKAT_Types.drop; NetKAT_Types.drop]
 
-let rec virtualize_pred pred =
-  match pred with
-  | True -> True
-  | False -> False
-  | Test (Switch sw) -> Test (VSwitch sw)
-  | Test (Location (Physical pt)) -> Test (VPort (Int64.of_int32 pt))
-  | Test hv -> Test hv
-  | And (a, b) -> And (virtualize_pred a, virtualize_pred b)
-  | Or (a, b) -> Or (virtualize_pred a, virtualize_pred b)
-  | Neg a -> Neg (virtualize_pred a)
-
-let rec virtualize pol =
-  match pol with
-  | Filter pred -> Filter (virtualize_pred pred)
-  | Mod (Location (Physical pt)) -> Mod (VPort (Int64.of_int32 pt))
-  | Union (p, q) -> Union (virtualize p, virtualize q)
-  | Seq (p, q) -> Seq (virtualize p, virtualize q)
-  | Star p -> Star (virtualize p)
-  | _ -> assert false
-
 let vno_pol () =
   let pinout = get_pred "pinout" in
   let vno1 = NetKAT_VirtualCompiler.compile
@@ -90,7 +70,7 @@ let handle_request
       printf "POST /update_vno %s" vnoId;
       let vnoId = Int.of_string vnoId in
       handle_parse_errors body parse_update_json (fun p ->
-        let p = virtualize p in
+        let p = virtualize_pol p in
         Array.set vno_pols (vnoId - 1) p;
         printf "VNO%d policy set to:\n%s\n" vnoId (NetKAT_Pretty.string_of_policy p);
         Cohttp_async.Server.respond `OK)

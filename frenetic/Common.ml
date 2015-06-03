@@ -1,6 +1,29 @@
 open Core.Std
 open Async.Std
 open Cohttp_async
+open NetKAT_Types
+
+
+let rec virtualize_pred pred =
+  match pred with
+  | True -> True
+  | False -> False
+  | Test (Switch sw) -> Test (VSwitch sw)
+  | Test (Location (Physical pt)) -> Test (VPort (Int64.of_int32 pt))
+  | Test hv -> Test hv
+  | And (a, b) -> And (virtualize_pred a, virtualize_pred b)
+  | Or (a, b) -> Or (virtualize_pred a, virtualize_pred b)
+  | Neg a -> Neg (virtualize_pred a)
+
+let rec virtualize_pol pol =
+  match pol with
+  | Filter pred -> Filter (virtualize_pred pred)
+  | Mod (Location (Physical pt)) -> Mod (VPort (Int64.of_int32 pt))
+  | Union (p, q) -> Union (virtualize_pol p, virtualize_pol q)
+  | Seq (p, q) -> Seq (virtualize_pol p, virtualize_pol q)
+  | Star p -> Star (virtualize_pol p)
+  | _ -> assert false
+
 
 let printf ?(level : [ `Debug | `Info | `Error ] = `Info)
   (fmt :  ('a, unit, string, unit) format4) =

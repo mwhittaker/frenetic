@@ -579,7 +579,7 @@ let rec encode_vlinks (vtopo : policy) =
 
 let compile ?(log=true) ?(record_paths=None) (vpolicy : policy) (vrel : pred)
   (vtopo : policy) (ving_pol : policy) (ving : pred) (veg : pred)
-  (ptopo : policy)                     (ping : pred) (peg : pred) =
+  (ptopo : policy)                     (ping : pred) (peg : pred) : policy =
   let (fout_set, fin_set) = generate_fabrics ~log ~record_paths vrel vtopo ving veg ptopo ping peg in
   let fout = mk_big_union fout_set in
   let fin = mk_big_union fin_set in

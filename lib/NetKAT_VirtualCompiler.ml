@@ -144,7 +144,7 @@ module G = struct
       | VLink (vsw1,vpt1,vsw2,vpt2) -> [(vsw1,vpt1,vsw2,vpt2)]
       | Union (t1, t2) -> links_from_topo t1 @ links_from_topo t2
       | _ -> if vtopo = drop then [] else
-        failwith ("Virtual Compiler: not a valid virtual topology")
+          failwith (NetKAT_Pretty.string_of_policy vtopo)
   end) (VV)
 
   module Phys = GraphBuilder (struct

@@ -135,7 +135,9 @@ let handle_request
     Hashtbl.remove vnos i ;
     respond "OK"
   | `POST, VPolicy i ->
-    attempt_vno_update i body parse_pol_json (fun v p -> {v with policy = p})
+    attempt_vno_update i body 
+      (fun s -> virtualize_pol (parse_pol_json s))
+      (fun v p -> {v with policy = p})
       (fun p -> {default_vno with policy = p})
   | `POST, VRelation i ->
     attempt_vno_update i body parse_pred (fun v r -> {v with relation = r})

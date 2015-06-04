@@ -31,6 +31,7 @@ let macaddr_from_string (str : string) : Int64.t =
 
 let to_json_value (h : header_val) : json = match h with
   | Switch n -> `String (string_of_int (Int64.to_int_exn n))
+  | VSwitch n -> `String (string_of_int (Int64.to_int_exn n))
   (* JavaScript can't represent large 64-bit numbers *)
   | EthSrc n
   | EthDst n -> `String (macaddr_to_string n)
@@ -57,6 +58,7 @@ let to_json_value (h : header_val) : json = match h with
 let to_json_header (h : header_val) : json =
   let str = match h with
     | Switch _ -> "switch"
+    | VSwitch _ -> "vswitch"
     | Location _ -> "location"
     | EthSrc _ -> "ethsrc"
     | EthDst _ -> "ethdst"
@@ -115,6 +117,8 @@ let from_json_header_val (json : json) : header_val =
   match json |> member "header" |> to_string with
   | "switch" -> Switch (value |> to_string |> Int64.of_string)
   | "port" -> Location(Physical(value |> to_string |> Int32.of_string))
+  | "vswitch" -> VSwitch (value |> to_string |> Int64.of_string)
+  | "vport" -> VPort (value |> to_string |> Int64.of_string)
   | "ethsrc" -> EthSrc (value |> to_string |> macaddr_from_string)
   | "ethdst" -> EthDst (value |> to_string |> macaddr_from_string)
   | "vlan" -> Vlan (value |> to_string |> Int.of_string)

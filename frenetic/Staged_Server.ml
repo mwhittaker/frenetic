@@ -83,7 +83,7 @@ let request_to_stage (req : Request.t) : stage =
 let attempt_vno_update i body parse update default =
   (Body.to_string body) >>= (fun s ->
     print_endline s;
-    
+
       let value = parse s in
       print_endline "Done parsing";
       match Hashtbl.find vnos i with
@@ -103,12 +103,10 @@ let attempt_phys_update body parse loc =
     | _ -> respond "Parse error")
 
 let compile i vno =
-  let ing = if i = 1 then Baked_VNOS.get_pol "vno1-vingpol"
-  else Baked_VNOS.get_pol "vno2-vingpol" in
   print_endline "VNO Policy";
   print_endline (NetKAT_Pretty.string_of_policy vno.policy);
   print_endline "VNO Ingress Policy";
-  print_endline (NetKAT_Pretty.string_of_policy ing);
+  print_endline (NetKAT_Pretty.string_of_policy vno.ingress_policy);
   print_endline "VNO Topology";
   print_endline (NetKAT_Pretty.string_of_policy vno.topology);
   print_endline "VNO Relation";
@@ -117,7 +115,7 @@ let compile i vno =
   print_endline (NetKAT_Pretty.string_of_pred vno.ingress_predicate);
   print_endline "";
   (NetKAT_VirtualCompiler.compile vno.policy
-     vno.relation vno.topology ing
+     vno.relation vno.topology vno.ingress_policy
      vno.ingress_predicate vno.egress_predicate
      !topology !ingress_predicate
      !egress_predicate)
@@ -135,7 +133,7 @@ let handle_request
     Hashtbl.remove vnos i ;
     respond "OK"
   | `POST, VPolicy i ->
-    attempt_vno_update i body 
+    attempt_vno_update i body
       (fun s -> virtualize_pol (parse_pol_json s))
       (fun v p -> {v with policy = p})
       (fun p -> {default_vno with policy = p})
@@ -146,7 +144,7 @@ let handle_request
     attempt_vno_update i body parse_pol (fun v t -> {v with topology = t})
       (fun t -> {default_vno with topology = t})
   | `POST, VIngressPolicy i ->
-    attempt_vno_update i body parse_pol_json (fun v p -> {v with ingress_policy = p})
+    attempt_vno_update i body parse_pol (fun v p -> {v with ingress_policy = p})
       (fun p -> {default_vno with ingress_policy = p})
   | `POST, VIngressPredicate i ->
     attempt_vno_update i body parse_pred (fun v p -> {v with ingress_predicate = p})
@@ -209,4 +207,3 @@ let main (args : string list) : unit = match args with
     listen ~port:(Int.of_string p) ()
   | [] -> listen ~port:9000 ()
   |  _ -> (print_endline "Invalid command-line arguments"; Shutdown.shutdown 1)
-

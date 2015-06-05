@@ -61,8 +61,6 @@ let request_to_stage (req : Request.t) : stage =
   let parts = List.filter ~f:(fun str -> not (String.is_empty str))
     (String.split ~on:'/'
        (Uri.path req.uri)) in
-  (print_endline "");
-  (print_endline (List.hd_exn parts));
   match parts with
   | [ "add-vno"; i ]                      -> VAdd (int_of_string i)
   | [ "remove-vno"; i ]                   -> VRemove (int_of_string i)

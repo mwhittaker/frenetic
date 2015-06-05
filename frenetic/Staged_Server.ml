@@ -103,17 +103,6 @@ let attempt_phys_update body parse loc =
     | _ -> respond "Parse error")
 
 let compile i vno =
-  print_endline "VNO Policy";
-  print_endline (NetKAT_Pretty.string_of_policy vno.policy);
-  print_endline "VNO Ingress Policy";
-  print_endline (NetKAT_Pretty.string_of_policy vno.ingress_policy);
-  print_endline "VNO Topology";
-  print_endline (NetKAT_Pretty.string_of_policy vno.topology);
-  print_endline "VNO Relation";
-  print_endline (NetKAT_Pretty.string_of_pred vno.relation);
-  print_endline "VNO Ingress predicate";
-  print_endline (NetKAT_Pretty.string_of_pred vno.ingress_predicate);
-  print_endline "";
   (NetKAT_VirtualCompiler.compile vno.policy
      vno.relation vno.topology vno.ingress_policy
      vno.ingress_predicate vno.egress_predicate
@@ -159,24 +148,15 @@ let handle_request
   | `POST, PEgressPredicate ->
     attempt_phys_update body parse_pred egress_predicate
   | `GET, Compile ->
-    print_endline ("Physical Topology");
-    print_endline (NetKAT_Pretty.string_of_policy !topology);
-    print_endline ("Physical Ingress Predicate");
-    print_endline (NetKAT_Pretty.string_of_pred !ingress_predicate);
-    print_endline ("Physical Egress Predicate");
-    print_endline (NetKAT_Pretty.string_of_pred !egress_predicate);
-    print_endline "";
 
     let vno_list = Hashtbl.fold vnos ~init:[]
       ~f:(fun ~key:id ~data:vno acc -> vno::acc) in
     let union = List.fold (List.tl_exn vno_list)
       ~init:(compile 1 (List.hd_exn vno_list))
       ~f:(fun acc vno -> Optimize.mk_union acc (compile 2 vno)) in
-    print_endline "Union done";
     let global =
       NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
         ~remove_duplicates:true union in
-    print_endline "Global compilation done";
     compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
       (NetKAT_FDD.Value.of_int 0xffff) global );
     respond "OK"

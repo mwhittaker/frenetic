@@ -82,27 +82,20 @@ let request_to_stage (req : Request.t) : stage =
 
 let attempt_vno_update i body parse update default =
   (Body.to_string body) >>= (fun s ->
-    print_endline s;
-
-      let value = parse s in
-      print_endline "Done parsing";
-      match Hashtbl.find vnos i with
-            | Some vno -> Hashtbl.replace vnos i (update vno value) ; respond "Replace"
-            | None -> Hashtbl.add_exn vnos i (default value) ; respond "OK")
-    (* with *)
-    (* | Invalid_argument s -> respond s *)
-    (* | _ -> respond "Parse error") *)
+    let value = parse s in
+    match Hashtbl.find vnos i with
+    | Some vno -> Hashtbl.replace vnos i (update vno value) ; respond "Replace"
+    | None -> Hashtbl.add_exn vnos i (default value) ; respond "OK")
 
 let attempt_phys_update body parse loc =
   (Body.to_string body) >>= (fun s ->
     try
-      let value = parse s in
-      loc := value;
+      let value = parse s in loc := value;
       respond "Replace"
     with
     | _ -> respond "Parse error")
 
-let compile i vno =
+let compile vno =
   (NetKAT_VirtualCompiler.compile vno.policy
      vno.relation vno.topology vno.ingress_policy
      vno.ingress_predicate vno.egress_predicate
@@ -148,12 +141,11 @@ let handle_request
   | `POST, PEgressPredicate ->
     attempt_phys_update body parse_pred egress_predicate
   | `GET, Compile ->
-
     let vno_list = Hashtbl.fold vnos ~init:[]
       ~f:(fun ~key:id ~data:vno acc -> vno::acc) in
     let union = List.fold (List.tl_exn vno_list)
-      ~init:(compile 1 (List.hd_exn vno_list))
-      ~f:(fun acc vno -> Optimize.mk_union acc (compile 2 vno)) in
+      ~init:(compile (List.hd_exn vno_list))
+      ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
     let global =
       NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
         ~remove_duplicates:true union in
@@ -163,13 +155,8 @@ let handle_request
   | `GET, FlowTable sw -> begin
     match !compiled with
     | None -> respond "None"
-    | Some local ->
-      local |>
-          NetKAT_LocalCompiler.to_table' sw |>
-              (fun ls ->
-                print_endline "Printing table";
-            (List.map ~f:(fun (f,s) ->
-              let _ = List.iter ~f:print_endline s in f ) ls)) |>
+    | Some local -> local |>
+         NetKAT_LocalCompiler.to_table sw |>
          NetKAT_SDN_Json.flowTable_to_json |>
          Yojson.Basic.to_string ~std:true |>
          Cohttp_async.Server.respond_with_string end

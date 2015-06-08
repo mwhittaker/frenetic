@@ -138,18 +138,30 @@ let handle_request
     attempt_phys_update body parse_pred ingress_predicate
   | `POST, PEgressPredicate ->
     attempt_phys_update body parse_pred egress_predicate
-  | `GET, Compile ->
+  | `GET, Compile -> begin
     let vno_list = Hashtbl.fold vnos ~init:[]
       ~f:(fun ~key:id ~data:vno acc -> vno::acc) in
-    let union = List.fold (List.tl_exn vno_list)
-      ~init:(compile (List.hd_exn vno_list))
-      ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
-    let global =
-      NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
-        ~remove_duplicates:true union in
-    compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
-      (NetKAT_FDD.Value.of_int 0xffff) global );
-    respond "OK"
+    match List.hd vno_list, List.tl vno_list with
+    | Some hd, Some tl ->
+      let union = List.fold (List.tl_exn vno_list)
+        ~init:(compile (List.hd_exn vno_list))
+        ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
+      let global =
+        NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
+          ~remove_duplicates:true union in
+      compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
+                          (NetKAT_FDD.Value.of_int 0xffff) global );
+      respond "OK"
+    | Some hd, None ->
+      let global =
+        NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
+          ~remove_duplicates:true (compile hd) in
+      compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
+                          (NetKAT_FDD.Value.of_int 0xffff) global );
+      respond "OK"
+    | _ ->
+      compiled := None;
+      respond "None" end
   | `GET, FlowTable sw -> begin
     match !compiled with
     | None -> respond "None"

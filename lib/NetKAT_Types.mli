@@ -35,6 +35,7 @@ type header_val =
   | TCPDstPort of tpPort
   | VSwitch of vswitchId
   | VPort of vportId
+  | Wavelength of int8
   with sexp
 
 type pred =

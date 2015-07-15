@@ -19,6 +19,7 @@ module HeadersValues = struct
     ; ipDst : nwAddr
     ; tcpSrcPort : tpPort
     ; tcpDstPort : tpPort
+    ; wavelength : int8
     } with sexp, fields
 
   let compare x y =
@@ -72,6 +73,7 @@ module HeadersValues = struct
       ~ipDst:Int32.(g to_string)
       ~tcpSrcPort:Int.(g to_string)
       ~tcpDstPort:Int.(g to_string)
+      ~wavelength:Int.(g to_string)
 
   let to_hvs (t:t) : NetKAT_Types.header_val list =
     let open NetKAT_Types in
@@ -89,6 +91,7 @@ module HeadersValues = struct
       ~ipDst:(conv (fun x -> IP4Dst(x, 32l)))
       ~tcpSrcPort:(conv (fun x -> TCPSrcPort x))
       ~tcpDstPort:(conv (fun x -> TCPDstPort x))
+      ~wavelength:(conv (fun x -> Wavelength x))
 
 end
 
@@ -162,6 +165,7 @@ let rec eval_pred (pkt : packet) (pr : pred) : bool = match pr with
         SDN_Types.Pattern.Ip.less_eq (pkt.headers.ipDst, 32l) (n, m)
       | TCPSrcPort n -> pkt.headers.tcpSrcPort = n
       | TCPDstPort n -> pkt.headers.tcpDstPort = n
+      | Wavelength n -> pkt.headers.wavelength = n
       | VSwitch n | VPort n -> true (* SJS *)
     end
   | And (pr1, pr2) -> eval_pred pkt pr1 && eval_pred pkt pr2
@@ -185,6 +189,7 @@ let rec eval (pkt : packet) (pol : policy) : PacketSet.t = match pol with
       | VlanPcp n -> { pkt with headers = { pkt.headers with vlanPcp = n }}
       | EthType n -> { pkt with headers = { pkt.headers with ethType = n }}
       | IPProto n -> { pkt with headers = { pkt.headers with ipProto = n }}
+      | Wavelength l -> { pkt with headers = { pkt.headers with wavelength = l }}
       | IP4Src(n,m) ->
         (* JNF: assert m = 32? *)
         { pkt with headers = { pkt.headers with ipSrc = n }}

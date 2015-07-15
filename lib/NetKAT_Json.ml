@@ -54,6 +54,7 @@ let to_json_value (h : header_val) : json = match h with
       (("addr", `String (Ipaddr.V4.to_string (Ipaddr.V4.of_int32 addr)))::
 	 if m = 32 then []
 	 else ["mask", `Int (Int32.to_int_exn mask)])
+  | Wavelength l -> `Int l
 
 let to_json_header (h : header_val) : json =
   let str = match h with
@@ -69,7 +70,8 @@ let to_json_header (h : header_val) : json =
     | IP4Src _ -> "ip4src"
     | IP4Dst _ -> "ip4dst"
     | TCPSrcPort _ -> "tcpsrcport"
-    | TCPDstPort _ -> "tcpdstport" in
+    | TCPDstPort _ -> "tcpdstport"
+    | Wavelength _ -> "wavelength" in
   `String str
 
 
@@ -129,6 +131,7 @@ let from_json_header_val (json : json) : header_val =
   | "ipDst" -> IP4Dst (value |> to_string |> Packet.ip_of_string, 32l)
   | "tcpsrcport" -> TCPSrcPort (value |> to_string |> Int.of_string)
   | "tcpdstport" -> TCPDstPort (value |> to_string |> Int.of_string)
+  | "wavelength" -> Wavelength (value |> to_string |> Int.of_string)
   | str -> raise (Invalid_argument ("invalid header " ^ str))
 
 let rec from_json_pred (json : json) : pred =

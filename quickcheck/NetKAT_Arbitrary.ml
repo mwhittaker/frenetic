@@ -175,6 +175,7 @@ let arbitrary_tcp : NetKAT_Semantics.packet QuickCheck_gen.gen =
         ; ipDst = (try nwDst pkt with Invalid_argument(_) -> 0l)
         ; tcpSrcPort = (try tpSrc pkt with Invalid_argument(_) -> 0)
         ; tcpDstPort = (try tpDst pkt with Invalid_argument(_) -> 0)
+        ; wavelength = 0
         } in
       arbitrary_int64 >>= fun switch_id ->
         payload >>= fun payload ->

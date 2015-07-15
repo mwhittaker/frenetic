@@ -42,6 +42,7 @@ module Headers = struct
       ~ipDst:(matches_mask pat.nwDst)
       ~tcpSrcPort:(matches pat.tpSrc)
       ~tcpDstPort:(matches pat.tpDst)
+      ~wavelength:(matches pat.wavelength)
 
   let eval_action port (hdrs : HeadersValues.t) (action : action) =
     let open HeadersValues in

@@ -24,6 +24,7 @@ module Field = struct
     | TCPSrcPort
     | TCPDstPort
     | Location
+    | Wavelength
     with sexp
 
   (** The type of packet fields. This is an enumeration whose ordering has an
@@ -47,6 +48,7 @@ module Field = struct
     | TCPSrcPort -> "TCPSrcPort"
     | TCPDstPort -> "TCPDstPort"
     | Location -> "Location"
+    | Wavelength -> "Wavelength"
 
   let num_fields = 14
 
@@ -92,6 +94,7 @@ module Field = struct
     | NetKAT_Types.IP4Dst _ -> IP4Dst
     | NetKAT_Types.TCPSrcPort _ -> TCPSrcPort
     | NetKAT_Types.TCPDstPort _ -> TCPDstPort
+    | NetKAT_Types.Wavelength _ -> Wavelength
 
   (* Heuristic to pick a variable order that operates by scoring the fields
      in a policy. A field receives a high score if, when a test field=X
@@ -362,6 +365,7 @@ module Pattern = struct
       (Field.IP4Dst, Value.(Mask(Int64.of_int32 nwAddr, 32 + (Int32.to_int_exn mask))))
     | TCPSrcPort(tpPort) -> (Field.TCPSrcPort, Value.of_int tpPort)
     | TCPDstPort(tpPort) -> (Field.TCPDstPort, Value.of_int tpPort)
+    | Wavelength(lambda) -> (Field.Wavelength, Value.of_int lambda)
 
   let to_hv (f, v) =
     let open Field in
@@ -385,6 +389,7 @@ module Pattern = struct
     | (IP4Dst  , Const nwAddr) -> NetKAT.(IP4Dst(to_int32 nwAddr, 32l))
     | (TCPSrcPort, Const tpPort) -> NetKAT.(TCPSrcPort(to_int tpPort))
     | (TCPDstPort, Const tpPort) -> NetKAT.(TCPDstPort(to_int tpPort))
+    | (Wavelength, Const lambda) -> NetKAT.(Wavelength(to_int lambda))
     | _, _ -> raise (FieldValue_mismatch(f, v))
 
   let to_pred (f, v) =

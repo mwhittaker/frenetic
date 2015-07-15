@@ -25,6 +25,7 @@ let bytes_to_headers
   ; ipDst = (try nwDst pkt with Invalid_argument(_) -> 0l)
   ; tcpSrcPort = (try tpSrc pkt with Invalid_argument(_) -> 0)
   ; tcpDstPort = (try tpDst pkt with Invalid_argument(_) -> 0)
+  ; wavelength = 0
   }
 
 let packet_sync_headers (pkt:NetKAT_Semantics.packet) : NetKAT_Semantics.packet * bool =
@@ -63,7 +64,8 @@ let packet_sync_headers (pkt:NetKAT_Semantics.packet) : NetKAT_Semantics.packet 
       Packet.setTpDst)
     (* XXX(seliopou): currently does not support: *)
     ~ethType:(g (fun _ _ -> true) (fail "ethType"))
-    ~ipProto:(g (fun _ _ -> true) (fail "ipProto")) in
+    ~ipProto:(g (fun _ _ -> true) (fail "ipProto"))
+    ~wavelength:(g (fun _ _ -> true) (fail "wavelength")) in
   ({ pkt with payload = match pkt.payload with
     | SDN_Types.NotBuffered(_) -> SDN_Types.NotBuffered(Packet.marshal packet')
     | SDN_Types.Buffered(n, _) -> SDN_Types.Buffered(n, Packet.marshal packet')

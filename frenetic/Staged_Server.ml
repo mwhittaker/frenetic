@@ -54,6 +54,7 @@ type stage =
   | PIngressPredicate
   | PEgressPredicate
   | Compile
+  | CompileLocal      of switchId
   | FlowTable         of switchId
   | Unknown
 
@@ -74,6 +75,7 @@ let request_to_stage (req : Request.t) : stage =
   | [ "physical-ingress-predicate" ]      -> PIngressPredicate
   | [ "physical-egress-predicate" ]       -> PEgressPredicate
   | [ "compile" ]                         -> Compile
+  | [ "compile-local" ; sw ]              -> CompileLocal (Int64.of_string sw)
   | [ "get-flowtable" ; sw]               -> FlowTable (Int64.of_string sw)
   | _                                     -> Unknown
 
@@ -170,6 +172,17 @@ let handle_request
          NetKAT_SDN_Json.flowTable_to_json |>
          Yojson.Basic.to_string ~std:true |>
          Cohttp_async.Server.respond_with_string end
+  | `POST, CompileLocal sw ->
+    (Body.to_string body) >>= (fun s ->
+      try
+        parse_pol_json s |>
+        NetKAT_LocalCompiler.compile |>
+        NetKAT_LocalCompiler.to_table sw |>
+        NetKAT_SDN_Json.flowTable_to_json |>
+        Yojson.Basic.to_string ~std:true |>
+        Cohttp_async.Server.respond_with_string
+      with
+      | _ -> respond "Parse error")
   | _ -> respond "Unknown"
 
 

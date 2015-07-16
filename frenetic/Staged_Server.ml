@@ -182,14 +182,17 @@ let handle_request
         Yojson.Basic.to_string ~std:true |>
         Cohttp_async.Server.respond_with_string
       with
-      | _ -> respond "Parse error")
+      | Invalid_argument s ->
+        print_endline s ; respond "Parse error"
+      | Not_found ->
+        respond "Parse error" )
   | _ -> respond "Unknown"
 
 
 let listen ?(port=9000) () =
   NetKAT_FDD.Field.set_order
    [ Switch; Location; VSwitch; VPort; IP4Dst; Vlan; TCPSrcPort; TCPDstPort; IP4Src;
-      EthType; EthDst; EthSrc; VlanPcp; IPProto ];
+      EthType; EthDst; EthSrc; VlanPcp; IPProto ; Wavelength];
   ignore (Cohttp_async.Server.create (Tcp.on_port port) handle_request)
 
 let main (args : string list) : unit = match args with

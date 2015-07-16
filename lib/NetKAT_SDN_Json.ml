@@ -82,7 +82,8 @@ let pattern_to_json (p:Pattern.t) : json =
      ("nwProto", int_field ident p.nwProto);
      ("tpSrc", int_field ident p.tpSrc);
      ("tpDst", int_field ident p.tpDst);
-     ("inPort", int_field Int32.to_int_exn p.inPort) ]
+     ("inPort", int_field Int32.to_int_exn p.inPort);
+     ("wavelength", int_field ident p.wavelength)]
 
 let modify_to_json (m : modify) : json = match m with
   | SetEthSrc m ->

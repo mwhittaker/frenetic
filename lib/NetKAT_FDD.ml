@@ -50,12 +50,12 @@ module Field = struct
     | Location -> "Location"
     | Wavelength -> "Wavelength"
 
-  let num_fields = 14
+  let num_fields = 15
 
   (* Ensure that these are in the same order in which the variants appear. *)
   let all_fields =
     [ Switch; Vlan; VlanPcp; VSwitch; VPort; EthType; IPProto; EthSrc; EthDst;
-      IP4Src; IP4Dst; TCPSrcPort; TCPDstPort; Location; ]
+      IP4Src; IP4Dst; TCPSrcPort; TCPDstPort; Location; Wavelength ]
 
   let is_valid_order (lst : t list) : bool =
     List.length lst = num_fields &&
@@ -431,6 +431,8 @@ module Pattern = struct
       { pat with SDN.Pattern.tpSrc = Some(to_int tpPort) }
     | (TCPDstPort, Const tpPort) -> fun pat ->
       { pat with SDN.Pattern.tpDst = Some(to_int tpPort) }
+    | (Wavelength, Const lambda) -> fun pat ->
+      { pat with SDN.Pattern.wavelength = Some(to_int lambda) }
     | _, _ -> raise (FieldValue_mismatch(f, v))
 
 end
@@ -551,6 +553,7 @@ module Action = struct
         | IP4Dst  , Const nwAddr   -> SDN.(Modify(SetIP4Dst(to_int32 nwAddr))) :: acc
         | TCPSrcPort, Const tpPort -> SDN.(Modify(SetTCPSrcPort(to_int tpPort))) :: acc
         | TCPDstPort, Const tpPort -> SDN.(Modify(SetTCPDstPort(to_int tpPort))) :: acc
+        | Wavelength, Const lambda -> SDN.(Modify(SetWavelength(to_int lambda))) :: acc
         | _, _ -> raise (FieldValue_mismatch(key, data))
       ) :: acc)
 

@@ -27,7 +27,7 @@ type pattern =
     ; nwTos : nwTos option
     ; tpSrc : tpPort option
     ; tpDst : tpPort option
-    ; inPort : portId option 
+    ; inPort : portId option
     } with sexp
 
 type pseudoPort =
@@ -196,9 +196,9 @@ type stpState =
   | Block
 with sexp
 
-type portState = 
-  { down : bool; 
-    stp_state : stpState 
+type portState =
+  { down : bool;
+    stp_state : stpState
   } with sexp
 
 type portFeatures =
@@ -235,7 +235,7 @@ type portDescription =
   ; curr : portFeatures
   ; advertised : portFeatures
   ; supported : portFeatures
-  ; peer : portFeatures 
+  ; peer : portFeatures
   } with sexp
 
 module Format = struct
@@ -287,7 +287,7 @@ module Format = struct
     fprintf fmt "@[{@[@[packets=%Ld;@]@ @[bytes=%Ld;@]@ @[flows=%ld@]@]}@]"
       v.total_packet_count v.total_byte_count v.flow_count
 
-  let fmt_one_port_stat fmt (v: portStats) = 
+  let fmt_one_port_stat fmt (v: portStats) =
     fprintf fmt "@[{@[port_no=%d@ \
                       rx_packets=%Ld@ tx_packets=%Ld@ \
                       rx_bytes=%Ld@ tx_bytes=%Ld@ \
@@ -1683,7 +1683,7 @@ module PortStatus = struct
 
   type t =
     { reason : ChangeReason.t;
-      desc : portDescription 
+      desc : portDescription
     } with sexp
 
   let to_string status = Printf.sprintf
@@ -1722,7 +1722,7 @@ module SwitchFeatures = struct
     ; nwTos : bool
     ; tpSrc : bool
     ; tpDst : bool
-    ; inPort : bool 
+    ; inPort : bool
     } with sexp
 
   module Capabilities = struct
@@ -1734,7 +1734,7 @@ module SwitchFeatures = struct
       ; stp : bool
       ; ip_reasm : bool
       ; queue_stats : bool
-      ; arp_match_ip : bool 
+      ; arp_match_ip : bool
       } with sexp
 
     let size_of _ = 4
@@ -2368,12 +2368,12 @@ module StatsReply = struct
         sizeof_ofp_stats_reply + sizeof_ofp_flow_stats
       | PortRep rep ->
         set_ofp_stats_reply_stats_type out (ofp_stats_types_to_int OFPST_PORT);
-        begin 
+        begin
           let out = Cstruct.shift out sizeof_ofp_stats_reply in
-          match rep with 
+          match rep with
           | [] -> ()  (* DOn't really know yet *)
-          | head :: tail -> 
-            set_ofp_port_stats_port_no out (head.port_no); 
+          | head :: tail ->
+            set_ofp_port_stats_port_no out (head.port_no);
             set_ofp_port_stats_rx_packets out (head.rx_packets);
             set_ofp_port_stats_tx_packets out (head.tx_packets);
             set_ofp_port_stats_rx_bytes out (head.rx_bytes);
@@ -2880,7 +2880,7 @@ module Message = struct
     | ConfigRequestMsg
     | ConfigReplyMsg of SwitchConfig.t
   with sexp
-        
+
   let parse (hdr : Header.t) (body_buf : string) : (xid * t) =
     let buf = Cstruct.of_string body_buf in
     let code = match int_to_msg_code (hdr.Header.type_code) with

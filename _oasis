@@ -16,19 +16,15 @@ BuildTools:
 Library frenetic
   Path: lib
   BuildDepends:
+    ppx_deriving.std,
     async,
     base64 (>= 2.0.0),
-    camlp4.lib,
-    camlp4.extend,
     camlp4,
     core (= 112.24.0),
     cstruct,
-    cstruct.syntax,
     fieldslib,
-    fieldslib.syntax,
     ocamlgraph (>= 1.8.6),
     sexplib,
-    sexplib.syntax,
     str,
     tcpip,
     ulex,
@@ -52,6 +48,7 @@ Library frenetic
     Frenetic_OpenFlow_Header,
     Frenetic_OpenFlow0x01,
     Frenetic_OpenFlow0x04,
+    Frenetic_OpenFlow0x04_Parser,
     Frenetic_Packet,
     Frenetic_Topology,
     Frenetic_Util,
@@ -92,6 +89,7 @@ Executable frenetic
   CompiledObject: native
   BuildDepends:
     async,
+    camlp4.lib,
     core  (= 112.24.0),
     frenetic,
     frenetic.async,

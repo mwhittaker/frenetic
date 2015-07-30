@@ -32,6 +32,7 @@ depends: [
   "tcpip"
   "mparser"
   "ocamlgraph" {>= "1.8.6"}
+  "ppx_deriving" { >= "2.2" }
   "quickcheck"
   "ounit" {test}
   "pa_ounit" {test}

@@ -188,15 +188,19 @@ true: annot, bin_annot
 <lib_test/*.ml{,i,y}>: use_frenetic
 <lib_test/*.ml{,i,y}>: use_test_frenetic
 # OASIS_STOP
-<packet/lib/*.ml>: syntax_camlp4o
-<packet/test/*.ml>: syntax_camlp4o
 <openflow/lib/*.ml{,i}>: syntax_camlp4o
 <openflow/async/*.ml{,i}>: syntax_camlp4o
 <openflow/test/*.ml{,i}>: syntax_camlp4o
 <openflow/examples/*.ml{,i}>: syntax_camlp4o
-<test/*.ml>: syntax_camlp4o
 <async/*.ml>: syntax_camlp4o
 <syntax/*.ml>: syntax_camlp4o
-<lib/*.ml{,i}> and not <lib/Frenetic_OpenFlow0x04.ml>: syntax_camlp4o, package(sexplib.syntax), package(cstruct.syntax), package(fieldslib.syntax), package(camlp4.lib), package(camlp4.extend), package(camlp4)
+# List of files that use the cstruct syntax extension
+<lib/Frenetic_Packet.ml> or <lib/Frenetic_OpenFlow_Header.ml> or <lib/Frenetic_OpenFlow0x01.ml> or <lib/Frenetic_OpenFlow0x04_Parser.ml>: syntax_camlp4o, package(cstruct.syntax)
+# List of files that use the Camlp4 grammar specification syntax extension
+<lib/Frenetic_NetKAT_Parser.ml> or <lib/Frenetic_NetKAT_Lexer.ml>: syntax_camlp4o, package(camlp4.lib), package(camlp4.extend), package(camlp4)
+# List of files that use the sexplib syntax extension
+<lib/Frenetic_Fdd.ml{,i}> or <lib/Frenetic_NetKAT.ml{,i}> or <lib/Frenetic_NetKAT_Local_Compiler.ml{,i}> or <lib/Frenetic_NetKAT_Net.ml{,i}> or <lib/Frenetic_NetKAT_Semantics.ml{,i}> or <lib/Frenetic_Network.ml{,i}> or <lib/Frenetic_OpenFlow.ml{,i}> or<lib/Frenetic_OpenFlow0x01.ml{,i}> or <lib/Frenetic_OpenFlow_Header.ml{,i}> or <lib/Frenetic_Packet.ml{,i}>: syntax_camlp4o, package(sexplib.syntax)
+# List of files that use the fields syntax extension
+<lib/Frenetic_NetKAT_Semantics.ml{,i}>: syntax_camlp4o, package(fieldslib.syntax)
 true: thread
 true: -traverse

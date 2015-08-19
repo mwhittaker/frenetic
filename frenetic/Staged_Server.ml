@@ -7,6 +7,7 @@ open Core.Std
 open Async.Std
 open Cohttp_async
 open NetKAT_Types
+open NetKAT_Pretty
 module Server = Cohttp_async.Server
 open Common
 open Baked_VNOS
@@ -96,6 +97,22 @@ let attempt_phys_update body parse loc =
     | _ -> respond "Parse error")
 
 let compile vno =
+  print_endline "VNO Policy";
+  print_endline (string_of_policy vno.policy);
+  print_endline "VNO Ingress Policy";
+  print_endline (string_of_policy vno.ingress_policy);
+  print_endline "VNO Topology";
+  print_endline (string_of_policy vno.topology);
+  print_endline "VNO Relation";
+  print_endline (string_of_pred vno.relation);
+  print_endline "VNO Ingress predicate";
+  print_endline (string_of_pred vno.ingress_predicate);
+  print_endline "Physical Topology";
+  print_endline  (string_of_policy !topology);
+  print_endline "Physical ingress predicate";
+  print_endline (string_of_pred !ingress_predicate);
+  print_endline "Physical egress predicate";
+  print_endline (string_of_pred !egress_predicate);
   (NetKAT_VirtualCompiler.compile vno.policy
      vno.relation vno.topology vno.ingress_policy
      vno.ingress_predicate vno.egress_predicate
@@ -126,7 +143,7 @@ let handle_request
     attempt_vno_update i body parse_pol (fun v t -> {v with topology = t})
       (fun t -> {default_vno with topology = t})
   | `POST, VIngressPolicy i ->
-    attempt_vno_update i body parse_pol (fun v p -> {v with ingress_policy = p})
+    attempt_vno_update i body parse_pol_json (fun v p -> {v with ingress_policy = p})
       (fun p -> {default_vno with ingress_policy = p})
   | `POST, VIngressPredicate i ->
     attempt_vno_update i body parse_pred (fun v p -> {v with ingress_predicate = p})
@@ -145,8 +162,8 @@ let handle_request
       ~f:(fun ~key:id ~data:vno acc -> vno::acc) in
     match List.hd vno_list, List.tl vno_list with
     | Some hd, Some tl ->
-      let union = List.fold (List.tl_exn vno_list)
-        ~init:(compile (List.hd_exn vno_list))
+      let union = List.fold tl
+        ~init:(compile hd)
         ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
       let global =
         NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate

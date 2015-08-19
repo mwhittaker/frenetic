@@ -37,10 +37,22 @@ let compiled          = ref None
 
 let vnos = Hashtbl.create ~hashable:Int.hashable ()
 
+let parse_selection (string:string) : int list =
+  let string_ids = String.split string ~on:':' in
+  List.map string_ids ~f:int_of_string
+
 let parse_pol s = NetKAT_Parser.program NetKAT_Lexer.token (Lexing.from_string s)
 let parse_pol_json s = NetKAT_Json.policy_from_json_string s
 let parse_pred s = NetKAT_Parser.pred_program NetKAT_Lexer.token (Lexing.from_string s)
 let respond = Cohttp_async.Server.respond_with_string
+
+let respond_unknowns (unknowns:int list) : string =
+  let buffer = Bigbuffer.create (List.length unknowns) in
+  Bigbuffer.add_string buffer "Unknown VNOs: ";
+  List.iter unknowns ~f:(fun id ->
+    Bigbuffer.add_string buffer (string_of_int id);
+    Bigbuffer.add_string buffer ";");
+  Bigbuffer.contents buffer
 
 type stage =
   | VAdd              of int
@@ -56,6 +68,7 @@ type stage =
   | PEgressPredicate
   | Compile
   | CompileLocal      of switchId
+  | CompileSelective
   | FlowTable         of switchId
   | Unknown
 
@@ -77,6 +90,7 @@ let request_to_stage (req : Request.t) : stage =
   | [ "physical-egress-predicate" ]       -> PEgressPredicate
   | [ "compile" ]                         -> Compile
   | [ "compile-local" ; sw ]              -> CompileLocal (Int64.of_string sw)
+  | [ "compile-selective" ]               -> CompileSelective
   | [ "get-flowtable" ; sw]               -> FlowTable (Int64.of_string sw)
   | _                                     -> Unknown
 
@@ -119,6 +133,29 @@ let compile vno =
      !topology !ingress_predicate
      !egress_predicate)
 
+let compile_vnos vno_list =
+  match List.hd vno_list, List.tl vno_list with
+  | Some hd, Some tl ->
+    let union = List.fold (List.tl_exn vno_list)
+      ~init:(compile (List.hd_exn vno_list))
+      ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
+    let global =
+      NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
+        ~remove_duplicates:true union in
+    compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
+                        (NetKAT_FDD.Value.of_int 0xffff) global );
+    "OK"
+  | Some hd, None ->
+    let global =
+      NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
+        ~remove_duplicates:true (compile hd) in
+    compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
+                        (NetKAT_FDD.Value.of_int 0xffff) global );
+    "OK"
+  | _ ->
+    compiled := None;
+    "None"
+
 let handle_request
     ~(body : Cohttp_async.Body.t)
     (client_addr : Socket.Address.Inet.t)
@@ -157,38 +194,10 @@ let handle_request
     attempt_phys_update body parse_pred ingress_predicate
   | `POST, PEgressPredicate ->
     attempt_phys_update body parse_pred egress_predicate
-  | `GET, Compile -> begin
+  | `GET, Compile ->
     let vno_list = Hashtbl.fold vnos ~init:[]
       ~f:(fun ~key:id ~data:vno acc -> vno::acc) in
-    match List.hd vno_list, List.tl vno_list with
-    | Some hd, Some tl ->
-      let union = List.fold tl
-        ~init:(compile hd)
-        ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
-      let global =
-        NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
-          ~remove_duplicates:true union in
-      compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
-                          (NetKAT_FDD.Value.of_int 0xffff) global );
-      respond "OK"
-    | Some hd, None ->
-      let global =
-        NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
-          ~remove_duplicates:true (compile hd) in
-      compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
-                          (NetKAT_FDD.Value.of_int 0xffff) global );
-      respond "OK"
-    | _ ->
-      compiled := None;
-      respond "None" end
-  | `GET, FlowTable sw -> begin
-    match !compiled with
-    | None -> respond "None"
-    | Some local -> local |>
-         NetKAT_LocalCompiler.to_table sw |>
-         NetKAT_SDN_Json.flowTable_to_json |>
-         Yojson.Basic.to_string ~std:true |>
-         Cohttp_async.Server.respond_with_string end
+    respond (compile_vnos vno_list)
   | `POST, CompileLocal sw ->
     (Body.to_string body) >>= (fun s ->
       try
@@ -203,6 +212,24 @@ let handle_request
         print_endline s ; respond "Parse error"
       | Not_found ->
         respond "Parse error" )
+  | `POST, CompileSelective ->
+    (Body.to_string body) >>= (fun s ->
+      let vno_ids = parse_selection s in
+      let (vno_list, unknowns) = List.fold_left vno_ids ~init:([], [])
+        ~f:(fun (acc, unknowns) id -> match Hashtbl.find vnos id with
+        | Some vno -> (vno::acc, unknowns)
+        | None -> (acc, id::unknowns)) in
+      if (List.length unknowns > 0)
+      then respond (respond_unknowns unknowns)
+      else respond (compile_vnos vno_list))
+  | `GET, FlowTable sw -> begin
+    match !compiled with
+    | None -> respond "None"
+    | Some local -> local |>
+        NetKAT_LocalCompiler.to_table sw |>
+            NetKAT_SDN_Json.flowTable_to_json |>
+                Yojson.Basic.to_string ~std:true |>
+                    Cohttp_async.Server.respond_with_string end
   | _ -> respond "Unknown"
 
 

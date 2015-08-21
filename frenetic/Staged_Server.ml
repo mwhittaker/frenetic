@@ -34,12 +34,16 @@ let topology          = ref (Filter True)
 let ingress_predicate = ref True
 let egress_predicate  = ref True
 let compiled          = ref None
+let remove_duplicates = ref true
 
 let vnos = Hashtbl.create ~hashable:Int.hashable ()
 
 let parse_selection (string:string) : int list =
   let string_ids = String.split string ~on:':' in
   List.map string_ids ~f:int_of_string
+
+let parse_remove (string:string) : bool =
+  (String.lowercase string) = "true"
 
 let parse_pol s = NetKAT_Parser.program NetKAT_Lexer.token (Lexing.from_string s)
 let parse_pol_json s = NetKAT_Json.policy_from_json_string s
@@ -70,6 +74,7 @@ type stage =
   | CompileLocal      of switchId
   | CompileSelective
   | FlowTable         of switchId
+  | RemoveDuplicates    of bool
   | Unknown
 
 let request_to_stage (req : Request.t) : stage =
@@ -92,6 +97,7 @@ let request_to_stage (req : Request.t) : stage =
   | [ "compile-local" ; sw ]              -> CompileLocal (Int64.of_string sw)
   | [ "compile-selective" ]               -> CompileSelective
   | [ "get-flowtable" ; sw]               -> FlowTable (Int64.of_string sw)
+  | [ "remove-duplicates" ; s ]           -> RemoveDuplicates (parse_remove s)
   | _                                     -> Unknown
 
 
@@ -141,14 +147,14 @@ let compile_vnos vno_list =
       ~f:(fun acc vno -> Optimize.mk_union acc (compile vno)) in
     let global =
       NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
-        ~remove_duplicates:true union in
+        ~remove_duplicates:!remove_duplicates union in
     compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
                         (NetKAT_FDD.Value.of_int 0xffff) global );
     "OK"
   | Some hd, None ->
     let global =
       NetKAT_GlobalFDDCompiler.of_policy ~dedup:true ~ing:!ingress_predicate
-        ~remove_duplicates:true (compile hd) in
+        ~remove_duplicates:!remove_duplicates (compile hd) in
     compiled := Some (NetKAT_GlobalFDDCompiler.to_local NetKAT_FDD.Field.Vlan
                         (NetKAT_FDD.Value.of_int 0xffff) global );
     "OK"
@@ -202,10 +208,16 @@ let handle_request
     (Body.to_string body) >>= (fun s ->
       try
         parse_pol_json s |>
+        (fun s -> print_endline "Parsing policy :";
+                  print_endline (string_of_policy s);
+                  s) |>
         NetKAT_LocalCompiler.compile |>
         NetKAT_LocalCompiler.to_table sw |>
         NetKAT_SDN_Json.flowTable_to_json |>
         Yojson.Basic.to_string ~std:true |>
+        (fun s -> print_endline "Generated flowtable";
+                  print_endline s;
+                  s ) |>
         Cohttp_async.Server.respond_with_string
       with
       | Invalid_argument s ->
@@ -229,11 +241,14 @@ let handle_request
         NetKAT_LocalCompiler.to_table sw |>
             NetKAT_SDN_Json.flowTable_to_json |>
                 Yojson.Basic.to_string ~std:true |>
-                    Cohttp_async.Server.respond_with_string end
+                      Cohttp_async.Server.respond_with_string end
+  | `GET, RemoveDuplicates b ->
+    remove_duplicates := b; respond "Updated"
   | _ -> respond "Unknown"
 
 
 let listen ?(port=9000) () =
+  print_endline "NetKAT compiler running";
   NetKAT_FDD.Field.set_order
    [ Switch; Location; VSwitch; VPort; IP4Dst; Vlan; TCPSrcPort; TCPDstPort; IP4Src;
       EthType; EthDst; EthSrc; VlanPcp; IPProto ; Wavelength];

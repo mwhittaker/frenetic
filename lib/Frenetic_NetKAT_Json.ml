@@ -51,7 +51,7 @@ let to_json_value (h : header_val) : json = match h with
   | IP4Src (addr, mask)
   | IP4Dst (addr, mask) ->
      let m = Int32.to_int_exn mask in
-     `Assoc 
+     `Assoc
       (("addr", `String (Ipaddr.V4.to_string (Ipaddr.V4.of_int32 addr)))::
 	 if m = 32 then []
 	 else ["mask", `Int (Int32.to_int_exn mask)])
@@ -71,7 +71,7 @@ let to_json_header (h : header_val) : json =
     | IP4Src _ -> "ip4src"
     | IP4Dst _ -> "ip4dst"
     | TCPSrcPort _ -> "tcpsrcport"
-    | TCPDstPort _ -> "tcpdstport" 
+    | TCPDstPort _ -> "tcpdstport"
     | VFabric _ -> "vfabric" in
   `String str
 
@@ -135,9 +135,9 @@ let from_json_header_val (json : json) : header_val =
                                 to_int |> int_to_uint32)
       | "pipe" -> Pipe (value |> member "name" |> to_string)
       | "query" -> Query (value |> member "name" |> to_string)
-      | str -> raise (Invalid_argument ("invalid location type " ^ str)) 
+      | str -> raise (Invalid_argument ("invalid location type " ^ str))
 
-    in Location value  
+    in Location value
   | "port" -> Location(Physical(value |> to_string |> Int32.of_string))
   | "ethsrc" -> EthSrc (value |> to_string |> macaddr_from_string)
   | "ethdst" -> EthDst (value |> to_string |> macaddr_from_string)

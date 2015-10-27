@@ -151,7 +151,7 @@ let from_json_header_val (json : json) : header_val =
       let addr_json = value |> member "addr" in
       let mask_json = value |> member "mask" in
       IP4Dst (addr_json |> to_string |> Frenetic_Packet.ip_of_string,
-              mask_json |> to_string |> Int32.of_string)
+              mask_json |> to_int |> int_to_uint32)
   | "tcpsrcport" -> TCPSrcPort (value |> to_string |> Int.of_string)
   | "tcpdstport" -> TCPDstPort (value |> to_string |> Int.of_string)
   | str -> raise (Invalid_argument ("invalid header " ^ str))

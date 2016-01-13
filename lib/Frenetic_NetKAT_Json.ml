@@ -123,7 +123,7 @@ let from_json_header_val (json : json) : header_val =
   let open Yojson.Basic.Util in
   let value = json |> member "value" in
   match json |> member "header" |> to_string with
-  | "switch" -> Switch (value |> to_string |> Int64.of_string)
+  | "switch" -> Switch (value |> to_int |> Int64.of_int)
   | "vswitch" -> VSwitch (value |> to_string |> Int64.of_string)
   | "vport" -> VSwitch (value |> to_string |> Int64.of_string)
   | "location" ->

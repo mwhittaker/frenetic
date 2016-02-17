@@ -181,7 +181,7 @@ let default_compiler_options = {
   remove_tail_drops = false;
   dedup_flows = true;
   optimize = true;
-  openflow_adherence = `Sloppy;
+  openflow_adherence = `Strict;
 }
 
 let prepare_compilation ~options pol = begin
